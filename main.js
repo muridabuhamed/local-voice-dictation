@@ -188,7 +188,10 @@ function sendPasteKeystroke() {
     execFile(
       'powershell.exe',
       ['-NoProfile', '-NonInteractive', '-Command', script],
-      { windowsHide: true },
+      // Every other child_process call in this file has a timeout; this one
+      // didn't — if powershell.exe ever hung, a dictation would get stuck in
+      // "processing" forever with no error surfaced.
+      { windowsHide: true, timeout: 5000 },
       (err) => {
         if (err) reject(err)
         else resolve()
@@ -328,6 +331,17 @@ function createDashboardWindow() {
   dashboardWin.loadFile('renderer.html')
   dashboardWin.on('maximize', () => dashboardWin.webContents.send('window-maximized', true))
   dashboardWin.on('unmaximize', () => dashboardWin.webContents.send('window-maximized', false))
+  dashboardWin.on('closed', () => {
+    // The status pill is only ever hidden, never destroyed, between
+    // dictations (so it can be shown again instantly). A hidden-but-not-
+    // destroyed BrowserWindow still counts as "open" to Electron, so without
+    // this, closing the dashboard after even one dictation would leave the
+    // app running invisibly in the background — confirmed via a standalone
+    // reproduction: window-all-closed does not fire while any window,
+    // including a hidden one, still exists.
+    if (pillWin && !pillWin.isDestroyed()) pillWin.destroy()
+    if (reviewWin && !reviewWin.isDestroyed()) reviewWin.destroy()
+  })
 }
 
 // Small always-on-top indicator shown only while a dictation is actively in
@@ -368,6 +382,13 @@ function createPillWindow() {
 }
 
 function openReviewWindow(text, target, opts = {}) {
+  // The dashboard's history list (Recover) stays clickable while a review is
+  // already open. Without this, recovering a different entry mid-review would
+  // silently replace the pending one with no record it was ever abandoned.
+  if (pendingReview && pendingReview.text !== text) {
+    addHistoryEntry({ text: pendingReview.text, durationMs: pendingReview.durationMs, status: 'cancelled' })
+  }
+
   pendingReview = {
     text,
     target,
@@ -438,8 +459,19 @@ function setState(next, message = '', transcript = null) {
 
 function registerHotkey(accelerator) {
   globalShortcut.unregisterAll()
-  const ok = globalShortcut.register(accelerator, onHotkey)
-  return ok
+  try {
+    // globalShortcut.register() returns false for a well-formed but
+    // unavailable accelerator (e.g. claimed by the OS) — but *throws* for a
+    // syntactically invalid string, which isn't documented clearly and was
+    // confirmed by testing an invalid value through the real settings form.
+    // Since unregisterAll() above already cleared the old binding, letting
+    // that throw escape meant a bad hotkey didn't just fail to save — it
+    // silently killed the global hotkey entirely until restart, with no
+    // error shown, because the caller's fallback-on-failure code never ran.
+    return globalShortcut.register(accelerator, onHotkey)
+  } catch {
+    return false
+  }
 }
 
 // Shared by the hotkey's start-recording branch and the review window's Retry
