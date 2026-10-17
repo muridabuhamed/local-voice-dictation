@@ -1,0 +1,14 @@
+{
+  "name": "flow-clone",
+  "version": "0.1.0",
+  "description": "Minimal voice-dictation clone: hotkey -> record -> local offline transcription -> paste",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "setup": "node scripts/setup-whisper.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

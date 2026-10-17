@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    /* Deliberately a dark, compact HUD — distinct from the light dashboard,
+       since this floats above arbitrary other apps and needs to read clearly
+       regardless of what's behind it (no reference screenshot exists for
+       this piece, so this is an original, simple design, not a copy). */
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+    }
+    body {
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(20, 18, 14, 0.92);
+      color: #f4f2ec;
+      border-radius: 999px;
+      padding: 8px 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      -webkit-app-region: drag;
+      max-width: 220px;
+    }
+    .icon {
+      position: relative;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a9a69d;
+    }
+    .icon svg { width: 11px; height: 11px; }
+    .icon::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0;
+    }
+    .icon.recording { color: #ef6b61; }
+    .icon.recording::before { opacity: 0.25; animation: pulse 1.4s ease-out infinite; }
+    .icon.processing { color: #8a84f2; }
+    .icon.processing svg { animation: spin 1s linear infinite; }
+    .icon.success { color: #4cc987; }
+    .icon.error { color: #e2a447; }
+
+    @keyframes pulse {
+      0% { transform: scale(0.85); opacity: 0.3; }
+      70% { transform: scale(1.6); opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #label {
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+  <div class="pill">
+    <span class="icon idle" id="icon"></span>
+    <span id="label">Idle</span>
+  </div>
+  <script src="status-pill-renderer.js"></script>
+</body>
+</html>

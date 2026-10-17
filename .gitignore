@@ -1,0 +1,6 @@
+node_modules/
+.env
+
+# Large local speech-recognition binary + model, fetched by `npm run setup`.
+bin/
+models/
